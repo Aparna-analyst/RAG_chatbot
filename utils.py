@@ -169,7 +169,7 @@ class HallucinationDetector:
 def rag_with_hallucination_control(query, retriever, llm, hallucination_detector, top_k=5):
     results = retriever.retrieve(query, top_k=top_k)
     if not results:
-        return {"query": query, "answer": "No relevant context found."}
+        return {"query": query, "final_answer": "No relevant context found."}
 
     context = "\n\n".join([doc['content'] for doc in results])
     retrieved_chunks = [doc['content'] for doc in results]
@@ -243,4 +243,4 @@ else:
     print(f"✅ Loaded {vectorstore.collection.count()} documents from vector store.")
 
 rag_retriever = RAGRetriever(vectorstore, embedding_manager)
-hallucination_detector = HallucinationDetector(threshold=0.75)
+hallucination_detector = HallucinationDetector(threshold=0.6)
