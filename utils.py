@@ -111,41 +111,80 @@ llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name="llama-3.1-8b-instant", tem
 
 # -------------------- Hallucination Detection -------------------- #
 class HallucinationDetector:
-    def __init__(self, model_name="all-MiniLM-L6-v2", nli_model="facebook/bart-large-mnli", threshold=0.75, nli_trigger=0.6):
+    """
+    Hybrid Hallucination Detector:
+    1. Uses embedding similarity for fast grounding check.
+    2. If similarity < nli_trigger, performs an NLI entailment check for confirmation.
+    """
+
+    def __init__(self, model_name="all-MiniLM-L6-v2", nli_model="facebook/bart-large-mnli",
+                 threshold=0.75, nli_trigger=0.6):
+        print("🔍 Loading embedding model:", model_name)
         self.model = SentenceTransformer(model_name)
+
+        print("🔍 Loading NLI model:", nli_model)
         self.nli = pipeline("text-classification", model=nli_model)
+
         self.threshold = threshold
         self.nli_trigger = nli_trigger
 
-    def compute_similarity(self, response, retrieved_chunks):
+    def compute_similarity(self, response: str, retrieved_chunks: list) -> float:
         context_text = " ".join(retrieved_chunks)
         resp_emb = self.model.encode(response, convert_to_tensor=True)
         ctx_emb = self.model.encode(context_text, convert_to_tensor=True)
-        return util.cos_sim(resp_emb, ctx_emb).item()
+        sim = util.cos_sim(resp_emb, ctx_emb).item()
+        return sim
 
-    def nli_check(self, response, retrieved_chunks):
-        context_text = " ".join(retrieved_chunks)[:3000]
-        combined_text = f"{context_text} </s></s> {response}"
-        result = self.nli(combined_text)[0]
-        return {"label": result.get("label", "ERROR"), "score": round(result.get("score", 0.0), 3)}
+    def nli_check(self, response: str, retrieved_chunks: list) -> dict:
+        context_text = " ".join(retrieved_chunks)
+        if len(context_text) > 3000:
+            context_text = context_text[:3000]
 
-    def detect(self, response, retrieved_chunks):
+        try:
+            combined_text = f"{context_text} </s></s> {response}"
+            result = self.nli(combined_text)[0]
+
+            label = result.get("label", "ERROR")
+            score = result.get("score", 0.0)
+        except Exception as e:
+            label, score = "ERROR", 0.0
+            print(f"⚠️ NLI check failed: {e}")
+
+        return {"label": label, "score": round(score, 3)}
+
+    def detect(self, response: str, retrieved_chunks: list) -> dict:
+        """
+        Detect hallucination using hybrid logic.
+        Step 1: Similarity check
+        Step 2: NLI check (if similarity < nli_trigger)
+        """
         similarity = self.compute_similarity(response, retrieved_chunks)
         nli_info = None
         is_grounded = similarity >= self.threshold
-        needs_regeneration = False
+        needs_regeneration = False  # Track if regeneration is needed
+
+        # Run NLI if similarity is low
         if similarity < self.nli_trigger:
             nli_info = self.nli_check(response, retrieved_chunks)
-            if nli_info["label"].upper() != "ENTAILMENT":
+            if nli_info["label"].upper() == "ENTAILMENT" and nli_info["score"] > 0.7:
+                is_grounded = True
+                print(f"✅ NLI confirms entailment (score={nli_info['score']})")
+            else:
                 needs_regeneration = True
-                is_grounded = False
-        return {
+                print(f"⚠️ NLI check result: {nli_info['label']} (score={nli_info['score']})")
+        else:
+            # Similarity is high enough, no need for regeneration
+            nli_info = None
+
+        result = {
             "similarity": round(similarity, 3),
             "nli_result": nli_info,
             "is_grounded": is_grounded,
             "needs_regeneration": needs_regeneration,
             "status": "Grounded ✅" if is_grounded else "Hallucination ⚠️"
         }
+
+        return result
 
 
 # -------------------- Full RAG + Hallucination Pipeline -------------------- #
