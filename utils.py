@@ -10,6 +10,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 import chromadb
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
+import pickle
 
 # -------------------- Load API Key -------------------- #
 load_dotenv()
@@ -56,7 +57,7 @@ class VectorStore:
         self.persist_directory = persist_directory
         os.makedirs(self.persist_directory, exist_ok=True)
 
-        # ✅ Self-healing: Rebuild if corrupted
+        # Self-healing: Rebuild if corrupted
         try:
             self.client = chromadb.PersistentClient(path=str(self.persist_directory))
             self.collection = self.client.get_or_create_collection(
@@ -165,26 +166,27 @@ class HallucinationDetector:
             "status": status
         }
 
-# -------------------- Full RAG + Hallucination Pipeline -------------------- #
-def rag_with_hallucination_control(query, retriever, llm, hallucination_detector, top_k=5):
-    results = retriever.retrieve(query, top_k=top_k)
-    if not results:
-        return {
-            "query": query,
-            "initial_answer": "No relevant context found.",
-            "final_answer": "No relevant context found.",
-            "hallucination_result": {
-                "similarity": None,
-                "nli_result": None,
-                "is_grounded": False,
-                "needs_regeneration": False,
-                "status": "No context ⚠️"
-            }
-        }
-    context = "\n\n".join([doc['content'] for doc in results])
-    retrieved_chunks = [doc['content'] for doc in results]
+# -------------------- RAG with RL Optimizer -------------------- #
+def rag_with_optimizer(query, retriever, llm, optimizer=None, max_k=10):
+    """
+    RAG pipeline using a trained RetrievalOptimizer.
+    """
+    # Determine optimal k
+    if optimizer:
+        k = optimizer.get_optimal_k(query)
+        k = min(k, max_k)
+        print(f"🎯 RL-selected top_k = {k}")
+    else:
+        k = 5
+        print(f"🎯 Using default top_k = {k}")
 
-    prompt = f"""Use ONLY the context below to answer concisely.
+    retrieved_docs = retriever.retrieve(query, top_k=k)
+    context = "\n\n".join([doc['content'] for doc in retrieved_docs]) if retrieved_docs else ""
+
+    if not context:
+        return "No relevant context found to answer the question."
+
+    prompt = f"""Use the following context to answer the question concisely.
 Context:
 {context}
 
@@ -193,57 +195,30 @@ Question: {query}
 Answer:"""
 
     response = llm.invoke([prompt])
-    answer = response.content.strip()
+    return response.content.strip()
 
-    hall_result = hallucination_detector.detect(answer, retrieved_chunks)
-
-    # Regenerate if hallucinated
-    if not hall_result["is_grounded"]:
-        grounded_prompt = f"""Answer ONLY using the context below.
-If the answer is not present, reply exactly as: 'Information not found in the context.'
-
-Context:
-{context}
-
-Question: {query}
-
-Answer:"""
-        grounded_response = llm.invoke([grounded_prompt])
-        grounded_answer = grounded_response.content.strip()
-    else:
-        grounded_answer = answer
-
-    return {
-        "query": query,
-        "initial_answer": answer,
-        "final_answer": grounded_answer,
-        "hallucination_result": hall_result
-    }
-
-# -------------------- Initialize -------------------- #
+# -------------------- Load RL Optimizer -------------------- #
 data_dir = Path(__file__).parent / "data"
+rl_policy_path = data_dir / "reward_policy.pkl"
+
+if rl_policy_path.exists():
+    with open(rl_policy_path, "rb") as f:
+        retrieval_optimizer = pickle.load(f)
+    print("✅ Loaded RL Retrieval Optimizer")
+else:
+    retrieval_optimizer = None
+    print("⚠️ RL Retrieval Optimizer not found. Using default top_k")
+
+# -------------------- Initialize KB -------------------- #
 kb_dir = data_dir / "KB"
 vectorstore_dir = data_dir / "vector_store"
 
-# ✅ Handle broken or missing vector store automatically
-if not vectorstore_dir.exists() or not any(vectorstore_dir.iterdir()):
-    print("⚠️ No vector store found. It will be created automatically.")
-else:
-    try:
-        temp_client = chromadb.PersistentClient(path=str(vectorstore_dir))
-        _ = temp_client.list_collections()
-        print("✅ Vector store is valid.")
-    except Exception:
-        print("⚠️ Vector store is corrupted. Rebuilding...")
-        shutil.rmtree(vectorstore_dir, ignore_errors=True)
-
-# Prepare data
 all_docs = process_all_pdfs(kb_dir)
 chunks = split_documents(all_docs)
 embedding_manager = EmbeddingManager()
 vectorstore = VectorStore(persist_directory=vectorstore_dir)
 
-# Auto-regenerate if empty
+# Auto-generate embeddings if empty
 if vectorstore.collection.count() == 0:
     print("⚙️ Generating new embeddings...")
     texts = [doc.page_content for doc in chunks]
