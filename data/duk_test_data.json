@@ -1,0 +1,42 @@
+[
+   {
+    "query": "What are the MTech specializations offered at DUK?",
+    "expected_answer": "M.Tech programmes include specializations in Computer Science, Electronics, and Computational Engineering."
+   },
+   {
+    "query": "What is the eligibility requirement for MBA admission?",
+    "expected_answer": "Graduation with minimum 60% marks and valid CAT, CMAT, KMAT, or DUAT score."
+   },
+   {
+    "query": "What is Digital University Aptitude Test and how is it conducted?",
+    "expected_answer": "DUAT (Digital University Aptitude Test) is an online entrance exam for MSc and MTech admissions."
+   },
+    {
+    "query": "What is the application fee for Digital University AT?",
+    "expected_answer": "The application fee is typically INR 750 for general and INR 375 for SC/ST candidates."
+  },
+   {
+    "query": "Is hostel accommodation available for male students?",
+    "expected_answer": "Yes, separate hostel facilities are available for male students."
+  },
+  {
+    "query": "What is the Earn While You Learn scheme?",
+    "expected_answer": "A scheme allowing students to take up paid research or administrative work within the university."
+  },
+  {
+    "query": "Explain the Digital University Aptitude Test syllabus and marking scheme for MSc and MTech programmes.",
+    "expected_answer": "DUAT includes sections on general aptitude, logical reasoning, and subject-specific knowledge; each correct answer carries one mark."
+  },
+  {
+    "query": "Compare the focus areas of School of Digital Sciences and School of Digital Humanities.",
+    "expected_answer": "Digital Sciences focus on computing and data, while Digital Humanities integrates technology with social and cultural research."
+  },
+  {
+    "query": "Explain the steps to apply for DUK scholarships and financial aid.",
+    "expected_answer": "Students fill scholarship form via student portal, upload income certificate, and await verification."
+  },
+  {
+    "query": "Summarize DUK’s vision, mission, and core values in your own words.",
+    "expected_answer": "DUK aims to drive digital transformation through excellence in learning, innovation, and inclusive technology for society."
+  }
+]

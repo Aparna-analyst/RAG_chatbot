@@ -1,0 +1,43 @@
+[
+  {
+    "query": "What are the MSc programmes offered under the School of Digital Sciences?",
+    "expected_answer": "The School of Digital Sciences offers MSc Computer Science with specializations in AI, Cyber Security, Data Analytics, and more."
+  },
+  {
+    "query": "What is the eligibility for MSc Computer Science with specialization in Data Analytics?",
+    "expected_answer": "A bachelor's degree in Computer Science, IT, or related discipline with minimum 60% marks or equivalent CGPA."
+  },
+  {
+    "query": "Describe the complete admission process from application to enrolment for MSc students.",
+    "expected_answer": "Students apply online, appear for DUAT, attend interview, receive offer letter, and pay the token fee to confirm admission."
+  },
+  {
+    "query": "Which entrance exams are accepted for MTech admission?",
+    "expected_answer": "Admissions are based on GATE scores or DUAT conducted by DUK."
+  },
+  {
+    "query": "Explain how international students can apply to DUK and what documents they must submit.",
+    "expected_answer": "International students apply through DUK’s international admission portal and submit academic transcripts, passport, and English proficiency proof."
+  },
+  {
+    "query": "Summarize the research facilities available for postgraduate students at DUK.",
+    "expected_answer": "DUK provides high-performance computing labs, AI research centers, and interdisciplinary research hubs."
+  },
+  {
+    "query": "Describe all scholarships available at DUK and their eligibility criteria.",
+    "expected_answer": "Includes merit-based, need-based, and category scholarships; eligibility based on academic record and financial background."
+  },
+  {
+    "query": "Explain the internship opportunities available for MSc Data Analytics students.",
+    "expected_answer": "Students intern with industry partners in analytics, AI, and research labs during the final semester."
+  },
+  {
+    "query": "What is the Earn While You Learn scheme?",
+    "expected_answer": "A scheme allowing students to take up paid research or administrative work within the university."
+  },
+  {
+    "query": "Compare the focus areas of School of Digital Sciences and School of Digital Humanities.",
+    "expected_answer": "Digital Sciences focus on computing and data, while Digital Humanities integrates technology with social and cultural research."
+  }
+]
+

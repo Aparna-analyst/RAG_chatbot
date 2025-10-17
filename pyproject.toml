@@ -1,0 +1,21 @@
+[project]
+name = "gen-ai-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb>=1.1.1",
+    "faiss-cpu>=1.12.0",
+    "ipykernel>=6.30.1",
+    "langchain>=0.3.27",
+    "langchain-community>=0.3.30",
+    "langchain-core>=0.3.76",
+    "langchain-groq>=0.3.8",
+    "pandas>=2.3.2",
+    "pymupdf>=1.26.4",
+    "pypdf>=6.1.0",
+    "sentence-transformers>=5.1.1",
+    "streamlit>=1.50.0",
+    "unstructured>=0.18.15",
+]

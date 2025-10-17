@@ -1,0 +1,25 @@
+import json
+import pickle
+
+# Path to JSON and pickle
+json_path = "../data/duk_training_data.json"
+optimizer_path = "../data/reward_policy.pkl"
+
+# Load training queries from JSON
+with open(json_path, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+# Assuming your JSON is a list of dicts with a "query" key
+training_queries = [item["query"] for item in data]
+
+# Initialize optimizer
+optimizer = RetrievalOptimizer(retriever=rag_retriever, llm=llm, max_k=3)
+
+# Train optimizer
+optimizer.train(training_queries)
+
+# Save the learned policy
+with open(optimizer_path, "wb") as f:
+    pickle.dump(optimizer.policy, f)
+
+print(f"Policy saved to {optimizer_path}")
