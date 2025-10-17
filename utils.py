@@ -125,7 +125,7 @@ llm = ChatGroq(
 # -------------------- Hallucination Detection -------------------- #
 class HallucinationDetector:
     def __init__(self, model_name="all-MiniLM-L6-v2", nli_model="facebook/bart-large-mnli",
-                 threshold=0.75, nli_trigger=0.6):
+                 threshold=0.6, nli_trigger=0.7):
         self.model = SentenceTransformer(model_name)
         self.nli = pipeline("text-classification", model=nli_model)
         self.threshold = threshold
