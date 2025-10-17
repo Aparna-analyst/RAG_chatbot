@@ -169,8 +169,18 @@ class HallucinationDetector:
 def rag_with_hallucination_control(query, retriever, llm, hallucination_detector, top_k=5):
     results = retriever.retrieve(query, top_k=top_k)
     if not results:
-        return {"query": query, "final_answer": "No relevant context found."}
-
+        return {
+            "query": query,
+            "initial_answer": "No relevant context found.",
+            "final_answer": "No relevant context found.",
+            "hallucination_result": {
+                "similarity": None,
+                "nli_result": None,
+                "is_grounded": False,
+                "needs_regeneration": False,
+                "status": "No context ⚠️"
+            }
+        }
     context = "\n\n".join([doc['content'] for doc in results])
     retrieved_chunks = [doc['content'] for doc in results]
 
