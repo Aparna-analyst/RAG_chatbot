@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import uuid
+import shutil
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
@@ -21,12 +22,15 @@ def process_all_pdfs(pdf_directory: Path):
     print(f"Found {len(pdf_files)} PDFs in {pdf_directory}")
 
     for pdf_file in pdf_files:
-        loader = PyPDFLoader(str(pdf_file))
-        documents = loader.load()
-        for doc in documents:
-            doc.metadata['source_file'] = pdf_file.name
-            doc.metadata['file_type'] = 'pdf'
-        all_documents.extend(documents)
+        try:
+            loader = PyPDFLoader(str(pdf_file))
+            documents = loader.load()
+            for doc in documents:
+                doc.metadata['source_file'] = pdf_file.name
+                doc.metadata['file_type'] = 'pdf'
+            all_documents.extend(documents)
+        except Exception as e:
+            print(f"⚠️ Failed to process {pdf_file.name}: {e}")
     return all_documents
 
 def split_documents(documents, chunk_size=1000, chunk_overlap=200):
@@ -43,6 +47,7 @@ class EmbeddingManager:
         self.model = SentenceTransformer(model_name)
 
     def generate_embeddings(self, texts):
+        print(f"Generating embeddings for {len(texts)} chunks...")
         return self.model.encode(texts, show_progress_bar=True)
 
 class VectorStore:
@@ -50,11 +55,23 @@ class VectorStore:
         self.collection_name = collection_name
         self.persist_directory = persist_directory
         os.makedirs(self.persist_directory, exist_ok=True)
-        self.client = chromadb.PersistentClient(path=str(self.persist_directory))
-        self.collection = self.client.get_or_create_collection(
-            name=self.collection_name,
-            metadata={"description": "PDF embeddings for RAG"}
-        )
+
+        # ✅ Self-healing: Rebuild if corrupted
+        try:
+            self.client = chromadb.PersistentClient(path=str(self.persist_directory))
+            self.collection = self.client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"description": "PDF embeddings for RAG"}
+            )
+        except Exception as e:
+            print(f"⚠️ ChromaDB error: {e}\nRebuilding vector store...")
+            shutil.rmtree(self.persist_directory, ignore_errors=True)
+            os.makedirs(self.persist_directory, exist_ok=True)
+            self.client = chromadb.PersistentClient(path=str(self.persist_directory))
+            self.collection = self.client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"description": "Rebuilt PDF embeddings for RAG"}
+            )
 
     def add_documents(self, documents, embeddings):
         ids, metadatas, docs_text, embeddings_list = [], [], [], []
@@ -64,7 +81,9 @@ class VectorStore:
             metadatas.append({**doc.metadata, 'doc_index': i, 'content_length': len(doc.page_content)})
             docs_text.append(doc.page_content)
             embeddings_list.append(emb.tolist())
+
         self.collection.add(ids=ids, embeddings=embeddings_list, metadatas=metadatas, documents=docs_text)
+        print(f"✅ Added {len(documents)} documents to ChromaDB.")
 
 # -------------------- RAG Retriever -------------------- #
 class RAGRetriever:
@@ -96,7 +115,12 @@ class RAGRetriever:
         return retrieved_docs
 
 # -------------------- LLM -------------------- #
-llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name="llama-3.1-8b-instant", temperature=0.1, max_tokens=1024)
+llm = ChatGroq(
+    groq_api_key=GROQ_API_KEY,
+    model_name="llama-3.1-8b-instant",
+    temperature=0.1,
+    max_tokens=1024
+)
 
 # -------------------- Hallucination Detection -------------------- #
 class HallucinationDetector:
@@ -133,9 +157,13 @@ class HallucinationDetector:
                 needs_regeneration = True
 
         status = "Grounded ✅" if is_grounded else "Hallucination ⚠️"
-        return {"similarity": round(similarity,3), "nli_result": nli_info,
-                "is_grounded": is_grounded, "needs_regeneration": needs_regeneration,
-                "status": status}
+        return {
+            "similarity": round(similarity, 3),
+            "nli_result": nli_info,
+            "is_grounded": is_grounded,
+            "needs_regeneration": needs_regeneration,
+            "status": status
+        }
 
 # -------------------- Full RAG + Hallucination Pipeline -------------------- #
 def rag_with_hallucination_control(query, retriever, llm, hallucination_detector, top_k=5):
@@ -175,29 +203,44 @@ Answer:"""
     else:
         grounded_answer = answer
 
-    return {"query": query, "initial_answer": answer, "final_answer": grounded_answer, "hallucination_result": hall_result}
+    return {
+        "query": query,
+        "initial_answer": answer,
+        "final_answer": grounded_answer,
+        "hallucination_result": hall_result
+    }
 
 # -------------------- Initialize -------------------- #
 data_dir = Path(__file__).parent / "data"
 kb_dir = data_dir / "KB"
 vectorstore_dir = data_dir / "vector_store"
 
-# Process KB PDFs
+# ✅ Handle broken or missing vector store automatically
+if not vectorstore_dir.exists() or not any(vectorstore_dir.iterdir()):
+    print("⚠️ No vector store found. It will be created automatically.")
+else:
+    try:
+        temp_client = chromadb.PersistentClient(path=str(vectorstore_dir))
+        _ = temp_client.list_collections()
+        print("✅ Vector store is valid.")
+    except Exception:
+        print("⚠️ Vector store is corrupted. Rebuilding...")
+        shutil.rmtree(vectorstore_dir, ignore_errors=True)
+
+# Prepare data
 all_docs = process_all_pdfs(kb_dir)
 chunks = split_documents(all_docs)
 embedding_manager = EmbeddingManager()
-
-# Initialize vector store
 vectorstore = VectorStore(persist_directory=vectorstore_dir)
 
-# Auto-regenerate embeddings if empty
+# Auto-regenerate if empty
 if vectorstore.collection.count() == 0:
-    print("Vector store empty. Generating embeddings...")
+    print("⚙️ Generating new embeddings...")
     texts = [doc.page_content for doc in chunks]
     embeddings = embedding_manager.generate_embeddings(texts)
     vectorstore.add_documents(chunks, embeddings)
 else:
-    print(f"Vector store already has {vectorstore.collection.count()} documents.")
+    print(f"✅ Loaded {vectorstore.collection.count()} documents from vector store.")
 
 rag_retriever = RAGRetriever(vectorstore, embedding_manager)
 hallucination_detector = HallucinationDetector(threshold=0.75)
