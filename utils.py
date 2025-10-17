@@ -57,7 +57,6 @@ class VectorStore:
         self.persist_directory = persist_directory
         os.makedirs(self.persist_directory, exist_ok=True)
 
-        # Self-healing: Rebuild if corrupted
         try:
             self.client = chromadb.PersistentClient(path=str(self.persist_directory))
             self.collection = self.client.get_or_create_collection(
@@ -166,12 +165,17 @@ class HallucinationDetector:
             "status": status
         }
 
+# -------------------- RL Optimizer Wrapper -------------------- #
+class RetrievalOptimizerWrapper:
+    def __init__(self, policy_dict):
+        self.policy = policy_dict
+
+    def get_optimal_k(self, query):
+        # Example: return stored default_k or implement actual policy logic
+        return self.policy.get("default_k", 5)
+
 # -------------------- RAG with RL Optimizer -------------------- #
 def rag_with_optimizer(query, retriever, llm, optimizer=None, max_k=10):
-    """
-    RAG pipeline using a trained RetrievalOptimizer.
-    """
-    # Determine optimal k
     if optimizer:
         k = optimizer.get_optimal_k(query)
         k = min(k, max_k)
@@ -203,7 +207,8 @@ rl_policy_path = data_dir / "reward_policy.pkl"
 
 if rl_policy_path.exists():
     with open(rl_policy_path, "rb") as f:
-        retrieval_optimizer = pickle.load(f)
+        policy_dict = pickle.load(f)
+    retrieval_optimizer = RetrievalOptimizerWrapper(policy_dict)
     print("✅ Loaded RL Retrieval Optimizer")
 else:
     retrieval_optimizer = None
@@ -218,7 +223,6 @@ chunks = split_documents(all_docs)
 embedding_manager = EmbeddingManager()
 vectorstore = VectorStore(persist_directory=vectorstore_dir)
 
-# Auto-generate embeddings if empty
 if vectorstore.collection.count() == 0:
     print("⚙️ Generating new embeddings...")
     texts = [doc.page_content for doc in chunks]
