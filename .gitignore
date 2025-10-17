@@ -1,0 +1,13 @@
+# Ignore virtual environment
+.venv/
+
+# Ignore vector database and large files
+data/vector_store/
+
+# Ignore sensitive files and caches
+.env
+*.pkl
+*.log
+*.jsonl
+__pycache__/
+.DS_Store
