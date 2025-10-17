@@ -14,7 +14,7 @@ if "history" not in st.session_state:
 history_expander = st.sidebar.expander("Previous Queries", expanded=True)
 for idx, item in enumerate(reversed(st.session_state.history)):
     st.markdown(f"**Q:** {item['query']}")
-    st.markdown(f"**A:** {item['answer'][:300]}...")  # show preview
+    st.markdown(f"**A:** {item['answer'][:300]}...")  # preview only
     st.markdown("---")
 
 # ------------------- User Input ------------------- #
@@ -36,20 +36,23 @@ if st.button("Get Answer"):
             )
 
         # ------------------- Display Output ------------------- #
-        st.markdown("### 🧾 Answer")
+        st.markdown("### 🧾 Final Answer")
         st.write(result["final_answer"])
 
         st.markdown("### 🔍 Hallucination Check")
-        st.write(result["hallucination_result"])
+        st.json(result["hallucination_result"])
 
-        # Optional: Show initial answer
+        # Expanders for details
         with st.expander("Show Initial Answer"):
             st.write(result["initial_answer"])
 
-        # Optional: Show sources
         with st.expander("Show Retrieved Sources"):
-            for idx, doc in enumerate(result.get("hallucination_result", {}).get("retrieved_chunks", [])):
-                st.markdown(f"**Source {idx+1}:** {doc[:300]}...")  # preview only
+            retrieved_chunks = result.get("hallucination_result", {}).get("retrieved_chunks", [])
+            if retrieved_chunks:
+                for idx, chunk in enumerate(retrieved_chunks):
+                    st.markdown(f"**Source {idx+1}:** {chunk[:300]}...")
+            else:
+                st.write("No sources retrieved.")
 
         # Save to session history
         st.session_state.history.append({
