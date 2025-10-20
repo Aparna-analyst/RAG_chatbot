@@ -10,7 +10,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 import chromadb
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
-import pickle
 
 # -------------------- Load API Key -------------------- #
 load_dotenv()
@@ -18,9 +17,10 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # -------------------- Data Ingestion -------------------- #
 def process_all_pdfs(pdf_directory: Path):
+    """Loads and processes all PDF files in the knowledge base folder."""
     all_documents = []
     pdf_files = list(pdf_directory.glob("*.pdf"))
-    print(f"Found {len(pdf_files)} PDFs in {pdf_directory}")
+    print(f"📄 Found {len(pdf_files)} PDFs in {pdf_directory}")
 
     for pdf_file in pdf_files:
         try:
@@ -34,7 +34,9 @@ def process_all_pdfs(pdf_directory: Path):
             print(f"⚠️ Failed to process {pdf_file.name}: {e}")
     return all_documents
 
+
 def split_documents(documents, chunk_size=1000, chunk_overlap=200):
+    """Splits documents into overlapping chunks for embedding."""
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
@@ -42,14 +44,16 @@ def split_documents(documents, chunk_size=1000, chunk_overlap=200):
     )
     return splitter.split_documents(documents)
 
+
 # -------------------- Embedding & Vector Store -------------------- #
 class EmbeddingManager:
     def __init__(self, model_name="all-MiniLM-L6-v2"):
         self.model = SentenceTransformer(model_name)
 
     def generate_embeddings(self, texts):
-        print(f"Generating embeddings for {len(texts)} chunks...")
+        print(f"🧠 Generating embeddings for {len(texts)} chunks...")
         return self.model.encode(texts, show_progress_bar=True)
+
 
 class VectorStore:
     def __init__(self, collection_name="pdf_docs", persist_directory=None):
@@ -85,6 +89,7 @@ class VectorStore:
         self.collection.add(ids=ids, embeddings=embeddings_list, metadatas=metadatas, documents=docs_text)
         print(f"✅ Added {len(documents)} documents to ChromaDB.")
 
+
 # -------------------- RAG Retriever -------------------- #
 class RAGRetriever:
     def __init__(self, vector_store, embedding_manager):
@@ -92,9 +97,11 @@ class RAGRetriever:
         self.embedding_manager = embedding_manager
 
     def retrieve(self, query, top_k=5, score_threshold=0.0):
+        """Retrieve top_k relevant chunks from the vector store."""
         query_emb = self.embedding_manager.generate_embeddings([query])[0]
         results = self.vector_store.collection.query(query_embeddings=[query_emb.tolist()], n_results=top_k)
         retrieved_docs = []
+
         if results['documents'] and results['documents'][0]:
             for i, (doc_id, doc, meta, dist) in enumerate(zip(
                 results['ids'][0],
@@ -102,17 +109,18 @@ class RAGRetriever:
                 results['metadatas'][0],
                 results['distances'][0]
             )):
-                similarity_score = 1 - dist
+                # Normalize distance -> similarity
+                similarity_score = 1 - (dist / 2)
                 if similarity_score >= score_threshold:
                     retrieved_docs.append({
                         'id': doc_id,
                         'content': doc,
                         'metadata': meta,
-                        'similarity_score': similarity_score,
-                        'distance': dist,
+                        'similarity_score': round(similarity_score, 3),
                         'rank': i + 1
                     })
         return retrieved_docs
+
 
 # -------------------- LLM -------------------- #
 llm = ChatGroq(
@@ -121,6 +129,7 @@ llm = ChatGroq(
     temperature=0.1,
     max_tokens=1024
 )
+
 
 # -------------------- Hallucination Detection -------------------- #
 class HallucinationDetector:
@@ -144,6 +153,15 @@ class HallucinationDetector:
         return {"label": result.get("label", "ERROR"), "score": round(result.get("score", 0.0), 3)}
 
     def detect(self, response, retrieved_chunks):
+        if not retrieved_chunks:
+            return {
+                "similarity": None,
+                "nli_result": None,
+                "is_grounded": False,
+                "needs_regeneration": False,
+                "status": "No context ⚠️"
+            }
+
         similarity = self.compute_similarity(response, retrieved_chunks)
         nli_info = None
         is_grounded = similarity >= self.threshold
@@ -165,32 +183,30 @@ class HallucinationDetector:
             "status": status
         }
 
-# -------------------- RL Optimizer Wrapper -------------------- #
-class RetrievalOptimizerWrapper:
-    def __init__(self, policy_dict):
-        self.policy = policy_dict
 
-    def get_optimal_k(self, query):
-        # Example: return stored default_k or implement actual policy logic
-        return self.policy.get("default_k", 5)
+# -------------------- Full RAG + Hallucination Control -------------------- #
+def rag_with_hallucination_control(query, retriever, llm, hallucination_detector, top_k=5):
+    """Main RAG pipeline with hallucination detection and optional regeneration."""
+    results = retriever.retrieve(query, top_k=top_k)
 
-# -------------------- RAG with RL Optimizer -------------------- #
-def rag_with_optimizer(query, retriever, llm, optimizer=None, max_k=10):
-    if optimizer:
-        k = optimizer.get_optimal_k(query)
-        k = min(k, max_k)
-        print(f"🎯 RL-selected top_k = {k}")
-    else:
-        k = 5
-        print(f"🎯 Using default top_k = {k}")
+    if not results:
+        return {
+            "query": query,
+            "initial_answer": "No relevant context found.",
+            "final_answer": "No relevant context found.",
+            "hallucination_result": {
+                "similarity": None,
+                "nli_result": None,
+                "is_grounded": False,
+                "needs_regeneration": False,
+                "status": "No context ⚠️"
+            }
+        }
 
-    retrieved_docs = retriever.retrieve(query, top_k=k)
-    context = "\n\n".join([doc['content'] for doc in retrieved_docs]) if retrieved_docs else ""
+    context = "\n\n".join([doc['content'] for doc in results])
+    retrieved_chunks = [doc['content'] for doc in results]
 
-    if not context:
-        return "No relevant context found to answer the question."
-
-    prompt = f"""Use the following context to answer the question concisely.
+    prompt = f"""Use ONLY the context below to answer concisely.
 Context:
 {context}
 
@@ -198,26 +214,53 @@ Question: {query}
 
 Answer:"""
 
-    response = llm.invoke([prompt])
-    return response.content.strip()
+    response = llm.invoke(prompt)
+    answer = getattr(response, "content", str(response)).strip()
 
-# -------------------- Load RL Optimizer -------------------- #
+    hall_result = hallucination_detector.detect(answer, retrieved_chunks)
+
+    # Regenerate if hallucinated or uncertain
+    if hall_result["needs_regeneration"] or not hall_result["is_grounded"]:
+        grounded_prompt = f"""Answer ONLY using the context below.
+If the answer is not present, reply exactly as: 'Information not found in the context.'
+
+Context:
+{context}
+
+Question: {query}
+
+Answer:"""
+        grounded_response = llm.invoke(grounded_prompt)
+        grounded_answer = getattr(grounded_response, "content", str(grounded_response)).strip()
+    else:
+        grounded_answer = answer
+
+    return {
+        "query": query,
+        "initial_answer": answer,
+        "final_answer": grounded_answer,
+        "hallucination_result": hall_result
+    }
+
+
+# -------------------- Initialize -------------------- #
 data_dir = Path(__file__).parent / "data"
-rl_policy_path = data_dir / "reward_policy.pkl"
-
-if rl_policy_path.exists():
-    with open(rl_policy_path, "rb") as f:
-        policy_dict = pickle.load(f)
-    retrieval_optimizer = RetrievalOptimizerWrapper(policy_dict)
-    print("✅ Loaded RL Retrieval Optimizer")
-else:
-    retrieval_optimizer = None
-    print("⚠️ RL Retrieval Optimizer not found. Using default top_k")
-
-# -------------------- Initialize KB -------------------- #
 kb_dir = data_dir / "KB"
 vectorstore_dir = data_dir / "vector_store"
 
+# Ensure vector store integrity
+if not vectorstore_dir.exists() or not any(vectorstore_dir.iterdir()):
+    print("⚠️ No vector store found. It will be created automatically.")
+else:
+    try:
+        temp_client = chromadb.PersistentClient(path=str(vectorstore_dir))
+        _ = temp_client.list_collections()
+        print("✅ Vector store is valid.")
+    except Exception:
+        print("⚠️ Vector store is corrupted. Rebuilding...")
+        shutil.rmtree(vectorstore_dir, ignore_errors=True)
+
+# Load data and initialize components
 all_docs = process_all_pdfs(kb_dir)
 chunks = split_documents(all_docs)
 embedding_manager = EmbeddingManager()
@@ -233,3 +276,4 @@ else:
 
 rag_retriever = RAGRetriever(vectorstore, embedding_manager)
 hallucination_detector = HallucinationDetector(threshold=0.6)
+

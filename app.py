@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import rag_retriever, llm, rag_with_optimizer, retrieval_optimizer, hallucination_detector
+from utils import rag_retriever, llm, rag_with_hallucination_control, hallucination_detector
 import pandas as pd
 
 # ------------------- Page Config ------------------- #
@@ -11,58 +11,60 @@ if 'history' not in st.session_state:
     st.session_state.history = []
 if 'selected_query' not in st.session_state:
     st.session_state.selected_query = ""
-if 'selected_answer' not in st.session_state:
-    st.session_state.selected_answer = ""
-if 'selected_hall' not in st.session_state:
-    st.session_state.selected_hall = None
+if 'selected_result' not in st.session_state:
+    st.session_state.selected_result = None
 
-# ------------------- Sidebar: Interactive Query History ------------------- #
+# ------------------- Sidebar: Query History ------------------- #
 st.sidebar.header("Query History")
+
+if st.sidebar.button("🗑️ Clear History"):
+    st.session_state.history.clear()
+    st.session_state.selected_query = ""
+    st.session_state.selected_result = None
+    st.rerun()
+
 if st.session_state.history:
-    for i, (q, a, hall) in enumerate(reversed(st.session_state.history)):
-        # Use a button for each query
-        if st.sidebar.button(f"{q[:50]}... | {hall['status']}", key=i):
-            st.session_state.selected_query = q
-            st.session_state.selected_answer = a
-            st.session_state.selected_hall = hall
+    for i, item in enumerate(reversed(st.session_state.history)):
+        query = item["query"]
+        status = item["hallucination_result"]["status"]
+        if st.sidebar.button(f"{query[:50]}... | {status}", key=f"q_{i}"):
+            st.session_state.selected_query = query
+            st.session_state.selected_result = item
 
 # ------------------- User Input ------------------- #
 st.subheader("Ask a Question")
 
-# If a past query is selected, pre-fill the text area
 query = st.text_area("Enter your question:", value=st.session_state.selected_query)
 
 if st.button("Submit") and query.strip():
-    # RL-optimized RAG retrieval
-    answer = rag_with_optimizer(query, rag_retriever, llm, optimizer=retrieval_optimizer)
-    
-    # Hallucination detection
-    hall_result = hallucination_detector.detect(answer, [])
+    with st.spinner("Retrieving and generating answer..."):
+        result = rag_with_hallucination_control(query, rag_retriever, llm, hallucination_detector)
 
-    # Store in history
-    st.session_state.history.append((query, answer, hall_result))
-
-    # Update selected query to current
+    st.session_state.history.append(result)
     st.session_state.selected_query = query
-    st.session_state.selected_answer = answer
-    st.session_state.selected_hall = hall_result
+    st.session_state.selected_result = result
 
 # ------------------- Display Current Answer ------------------- #
-if st.session_state.selected_answer:
-    st.markdown("**Answer:**")
-    st.write(st.session_state.selected_answer)
+if st.session_state.selected_result:
+    result = st.session_state.selected_result
 
-    st.markdown("**Hallucination Detection:**")
-    hall = st.session_state.selected_hall
+    st.markdown("### 💬 Answer")
+    st.write(result["final_answer"])
+
+    st.markdown("### 🔍 Hallucination Detection Results")
+    hall = result["hallucination_result"]
+    nli_label = hall["nli_result"]["label"] if hall["nli_result"] else "N/A"
+    nli_score = hall["nli_result"]["score"] if hall["nli_result"] else "N/A"
+
     hall_df = pd.DataFrame({
         "Field": ["Similarity", "Grounded", "Needs Regeneration", "Status", "NLI Label", "NLI Score"],
         "Value": [
-            hall["similarity"],
-            hall["is_grounded"],
-            hall["needs_regeneration"],
-            hall["status"],
-            hall["nli_result"]["label"] if hall["nli_result"] else None,
-            hall["nli_result"]["score"] if hall["nli_result"] else None
+            hall.get("similarity", None),
+            hall.get("is_grounded", None),
+            hall.get("needs_regeneration", None),
+            hall.get("status", None),
+            nli_label,
+            nli_score
         ]
     })
     st.table(hall_df)
