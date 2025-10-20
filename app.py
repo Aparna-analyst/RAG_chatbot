@@ -27,30 +27,39 @@ if st.session_state.history:
             st.rerun()
 
 # ------------------- Display Chat Conversation ------------------- #
-for idx, chat in enumerate(st.session_state.history):
-    with st.chat_message("user"):
-        st.markdown(f"**{chat['query']}**")
+if st.session_state.history:
+    for idx, chat in enumerate(st.session_state.history):
+        with st.chat_message("user"):
+            st.markdown(f"**{chat['query']}**")
 
+        with st.chat_message("assistant"):
+            st.write(chat["final_answer"])
+
+            hall = chat["hallucination_result"]
+            nli_label = hall["nli_result"]["label"] if hall["nli_result"] else "N/A"
+            nli_score = hall["nli_result"]["score"] if hall["nli_result"] else "N/A"
+
+            with st.expander("🔍 Hallucination Detection Details"):
+                hall_df = pd.DataFrame({
+                    "Field": ["Similarity", "Grounded", "Needs Regeneration", "Status", "NLI Label", "NLI Score"],
+                    "Value": [
+                        hall.get("similarity", None),
+                        hall.get("is_grounded", None),
+                        hall.get("needs_regeneration", None),
+                        hall.get("status", None),
+                        nli_label,
+                        nli_score
+                    ]
+                })
+                st.table(hall_df)
+else:
+    # ------------------- Welcome Message (Before any query) ------------------- #
     with st.chat_message("assistant"):
-        st.write(chat["final_answer"])
-
-        hall = chat["hallucination_result"]
-        nli_label = hall["nli_result"]["label"] if hall["nli_result"] else "N/A"
-        nli_score = hall["nli_result"]["score"] if hall["nli_result"] else "N/A"
-
-        with st.expander("🔍 Hallucination Detection Details"):
-            hall_df = pd.DataFrame({
-                "Field": ["Similarity", "Grounded", "Needs Regeneration", "Status", "NLI Label", "NLI Score"],
-                "Value": [
-                    hall.get("similarity", None),
-                    hall.get("is_grounded", None),
-                    hall.get("needs_regeneration", None),
-                    hall.get("status", None),
-                    nli_label,
-                    nli_score
-                ]
-            })
-            st.table(hall_df)
+        st.markdown("""
+        👋 **Hey Aparna!**  
+        I'm your AI assistant powered by RAG and hallucination control.  
+        How can I help you today? 😊
+        """)
 
 # ------------------- User Input ------------------- #
 query = st.chat_input("Type your question here...")
