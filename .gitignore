@@ -9,5 +9,4 @@
 __pycache__/
 .DS_Store
 
-# Ignore vector store
 data/vector_store/

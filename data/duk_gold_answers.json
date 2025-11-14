@@ -37,6 +37,6 @@
   },
   {
     "query": "Summarize DUK’s vision, mission, and core values.",
-    "gold_answer": "Vision:\nTo be a globally respected hub of digital education and research, developing futuristic talents who create innovative and sustainable digital solutions for industry, government, and society.\nMission:\nTo \"curate a responsible digital world\" by advancing digital technologies for social good and promoting excellence in disruptive technologies.\nCore Values (Themes of Action):\n1. Computing\n2. Intelligence\n3. Sustainability\n4. Entrepreneurship\nComputing and Intelligence are the primary focus areas, while Sustainability and Entrepreneurship act as guiding principles."
+    "gold_answer":"Vision:\nTo be a globally respected hub of digital education and research, developing futuristic talents who create innovative and sustainable digital solutions for industry, government, and society.\nMission:\nTo \"curate a responsible digital world\" by advancing digital technologies for social good and promoting excellence in disruptive technologies.\nCore Values (Themes of Action):\n1. Computing\n2. Intelligence\n3. Sustainability\n4. Entrepreneurship\nComputing and Intelligence are the primary focus areas, while Sustainability and Entrepreneurship act as guiding principles."
   }
 ]
