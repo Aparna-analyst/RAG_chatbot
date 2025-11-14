@@ -118,7 +118,8 @@ This bar chart shows the **average semantic accuracy** (cosine similarity) for e
 - RL + Hallucination Control  
 
 #### Chart:
-![Accuracy Comparison](images/accuracy_chart.png)
+<img width="989" height="490" alt="image" src="https://github.com/user-attachments/assets/4fc8238d-5276-425c-9b8c-64412105024b" />
+
 
 > This chart highlights that **Advanced RAG** produces the highest raw similarity due to longer answers, while **Hallucination-Controlled RAG** provides balanced accuracy with grounded, safe responses.
 
@@ -130,7 +131,8 @@ This chart shows how often each method produced a hallucinated answer
 (according to the groundedness detection system).
 
 ####  Chart:
-![Hallucination Comparison](images/hallucination_chart.png)
+<img width="789" height="490" alt="image" src="https://github.com/user-attachments/assets/f503fab5-f55f-46d4-abd8-40151e62d34d" />
+
 
 > Hallucination-Controlled models perform significantly better in preventing hallucinated content, especially in missing-context scenarios.
 
@@ -244,5 +246,6 @@ This project uses:
 * ChromaDB
 * Streamlit
 * NumPy, Pandas, Matplotlib
+
 
 
