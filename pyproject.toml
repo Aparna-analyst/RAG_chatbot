@@ -15,6 +15,7 @@ dependencies = [
     "pandas>=2.3.2",
     "pymupdf>=1.26.4",
     "pypdf>=6.1.0",
+    "rouge-score>=0.1.2",
     "sentence-transformers>=5.1.1",
     "streamlit>=1.50.0",
     "unstructured>=0.18.15",

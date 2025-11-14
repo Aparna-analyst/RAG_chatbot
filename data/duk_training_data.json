@@ -1,43 +1,182 @@
 [
-  {
-    "query": "What are the MSc programmes offered under the School of Digital Sciences?",
-    "expected_answer": "The School of Digital Sciences offers MSc Computer Science with specializations in AI, Cyber Security, Data Analytics, and more."
-  },
-  {
-    "query": "What is the eligibility for MSc Computer Science with specialization in Data Analytics?",
-    "expected_answer": "A bachelor's degree in Computer Science, IT, or related discipline with minimum 60% marks or equivalent CGPA."
-  },
-  {
-    "query": "Describe the complete admission process from application to enrolment for MSc students.",
-    "expected_answer": "Students apply online, appear for DUAT, attend interview, receive offer letter, and pay the token fee to confirm admission."
-  },
-  {
-    "query": "Which entrance exams are accepted for MTech admission?",
-    "expected_answer": "Admissions are based on GATE scores or DUAT conducted by DUK."
-  },
-  {
-    "query": "Explain how international students can apply to DUK and what documents they must submit.",
-    "expected_answer": "International students apply through DUK’s international admission portal and submit academic transcripts, passport, and English proficiency proof."
-  },
-  {
-    "query": "Summarize the research facilities available for postgraduate students at DUK.",
-    "expected_answer": "DUK provides high-performance computing labs, AI research centers, and interdisciplinary research hubs."
-  },
-  {
-    "query": "Describe all scholarships available at DUK and their eligibility criteria.",
-    "expected_answer": "Includes merit-based, need-based, and category scholarships; eligibility based on academic record and financial background."
-  },
-  {
-    "query": "Explain the internship opportunities available for MSc Data Analytics students.",
-    "expected_answer": "Students intern with industry partners in analytics, AI, and research labs during the final semester."
-  },
-  {
-    "query": "What is the Earn While You Learn scheme?",
-    "expected_answer": "A scheme allowing students to take up paid research or administrative work within the university."
-  },
-  {
-    "query": "Compare the focus areas of School of Digital Sciences and School of Digital Humanities.",
-    "expected_answer": "Digital Sciences focus on computing and data, while Digital Humanities integrates technology with social and cultural research."
-  }
+    {
+        "query": "Give a brief overview of Digital University Kerala."
+    },
+    {
+        "query": "How does the university describe its mission?"
+    },
+    {
+        "query": "Summarize the vision statement of DUK."
+    },
+    {
+        "query": "Where are the university’s campuses located?"
+    },
+    {
+        "query": "Explain the major focus areas of research at DUK."
+    },
+    {
+        "query": "Which schools operate under DUK?"
+    },
+    {
+        "query": "Describe the facilities available at the university library."
+    },
+    {
+        "query": "How accessible is the DUK campus by road and rail?"
+    },
+    {
+        "query": "Who can students contact for PG admission support?"
+    },
+    {
+        "query": "Mention any two co-curricular clubs at DUK."
+    },
+    {
+        "query": "Walk me through the application process for PG programs at DUK."
+    },
+    {
+        "query": "Which entrance exams are accepted for MSc admissions?"
+    },
+    {
+        "query": "How does the university shortlist candidates for MBA?"
+    },
+    {
+        "query": "When does the DUAT exam take place in 2025?"
+    },
+    {
+        "query": "Identify the steps involved in the online application portal."
+    },
+    {
+        "query": "Are candidates with CUET-PG scores required to take DUAT again?"
+    },
+    {
+        "query": "List the documents required during online application submission."
+    },
+    {
+        "query": "Does DUK conduct interviews for postgraduate admissions?"
+    },
+    {
+        "query": "Compare the admission process for MSc vs M.Tech."
+    },
+    {
+        "query": "Explain whether DRAT is mandatory for all PhD applicants."
+    },
+    {
+        "query": "State the minimum eligibility for MSc Applied Physics."
+    },
+    {
+        "query": "Who is eligible to apply for MSc Cybersecurity?"
+    },
+    {
+        "query": "Check if a student with a BSc Mathematics degree can apply for MSc Data Analytics."
+    },
+    {
+        "query": "Does the MSc Data Science and Bio-AI program require a 4-year degree?"
+    },
+    {
+        "query": "Identify the required entrance scores for MBA admission."
+    },
+    {
+        "query": "Compare eligibility criteria for M.Tech CSE and M.Tech Electronics."
+    },
+    {
+        "query": "Can final-year undergraduate students apply for PG programs?"
+    },
+    {
+        "query": "Explain the CGPA-to-percentage conversion rule for eligibility."
+    },
+    {
+        "query": "Does DUK provide any relaxation for SEBC-NCL candidates?"
+    },
+    {
+        "query": "Who is eligible to join a PhD program part-time?"
+    },
+    {
+        "query": "List all specializations offered under M.Tech CSE."
+    },
+    {
+        "query": "Name the MBA specializations available at DUK."
+    },
+    {
+        "query": "What are the MSc programs offered under the School of Digital Sciences?"
+    },
+    {
+        "query": "Differentiate between MSc Data Analytics and MSc Data Analytics & Computational Science."
+    },
+    {
+        "query": "Identify programs that share the same DUAT test code."
+    },
+    {
+        "query": "Describe the structure of the DACE course."
+    },
+    {
+        "query": "What is the expected credit range for MSc programs?"
+    },
+    {
+        "query": "How does a student earn a minor specialization?"
+    },
+    {
+        "query": "Provide the breakdown of program core vs university core credits."
+    },
+    {
+        "query": "Summarize the credit distribution for a 4-semester PG program."
+    },
+    {
+        "query": "How much is the tuition fee for MSc programs per semester?"
+    },
+    {
+        "query": "Compare the fee structure of MBA vs MSc programs."
+    },
+    {
+        "query": "What is the caution deposit for PhD admissions?"
+    },
+    {
+        "query": "Does DUK refund fees upon cancellation of admission?"
+    },
+    {
+        "query": "Explain the Earn While You Learn scheme."
+    },
+    {
+        "query": "Identify the scholarships available for SC/ST students."
+    },
+    {
+        "query": "Does DUK offer financial support for GATE-qualified M.Tech candidates?"
+    },
+    {
+        "query": "What are the monthly fellowship amounts for full-time PhD scholars?"
+    },
+    {
+        "query": "Where can students apply for external scholarships?"
+    },
+    {
+        "query": "How is the hostel fee structured for female students?"
+    },
+    {
+        "query": "Outline the overall pattern of the DUAT exam."
+    },
+    {
+        "query": "What subjects are included in DUAT for MSc Computer Science?"
+    },
+    {
+        "query": "How many marks are deducted for a wrong answer in DUAT?"
+    },
+    {
+        "query": "Summarize the mathematics syllabus in DUAT-02."
+    },
+    {
+        "query": "Who is exempted from appearing for DRAT?"
+    },
+    {
+        "query": "Explain the attendance requirement for PG courses."
+    },
+    {
+        "query": "What are the rules for challenge examinations?"
+    },
+    {
+        "query": "Identify the grade point required to pass a course."
+    },
+    {
+        "query": "Describe the structure of summative assessments for 400-level courses."
+    },
+    {
+        "query": "What is the maximum duration allowed to complete a PG program?"
+    }
 ]
-
